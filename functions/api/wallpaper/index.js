@@ -197,9 +197,9 @@ export async function onRequest(context) {
     next, // used for middleware or to fetch assets
     data, // arbitrary space for passing data between middlewares
   } = context;
-  const type = new URL(request.url).searchParams.get("type") || "bing";
+  const source = new URL(request.url).searchParams.get("source") || "bing";
   const num = new URL(request.url).searchParams.get("num") || 1;
-  const images = await apis[type](num);
+  const images = await apis[source](num);
 
   const return_data = {
     status: true,
