@@ -51,6 +51,7 @@ async function getAlcy2cyWallpaper(num = 1) {
     .then((data) => {
       data.split("\n").forEach((img) => {
         img = img.trim();
+        if (!img) return; // 跳过空行
         wallpapers.push({
           url: img,
           meta: { source: "栗次元-二次元" },
@@ -67,6 +68,7 @@ async function getAlcyAIWallpaper(num = 1) {
     .then((data) => {
       data.split("\n").forEach((img) => {
         img = img.trim();
+        if (!img) return; // 跳过空行
         wallpapers.push({
           url: img,
           meta: { source: "栗次元-AI" },
@@ -83,6 +85,7 @@ async function getAlcyGenShinWallpaper(num = 1) {
     .then((data) => {
       data.split("\n").forEach((img) => {
         img = img.trim();
+        if (!img) return; // 跳过空行
         wallpapers.push({
           url: img,
           meta: { source: "栗次元-原神" },
