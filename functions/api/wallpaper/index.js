@@ -175,7 +175,15 @@ async function getRandomWallpaper(num = 1) {
     .map((key) => apis[key](record[key]));
   const results = await Promise.allSettled(promises);
 
-  return results.flat();
+  const wallpapers = [];
+  results.forEach((result, index) => {
+    if (result.status === "fulfilled") {
+      wallpapers.push(...result.value);
+    } else {
+      console.error(`Error fetching ${sources[index]}:`, result.reason);
+    }
+  });
+  return wallpapers;
 }
 
 // 入口函数
