@@ -29,18 +29,15 @@ async function getBingWallpaper(num = 1) {
 
 // 获取樱花壁纸
 async function getYingHuaWallpaper(num = 1) {
-  const wallpapers = [];
-  for (let i = 0; i < num; i++) {
-    await fetch(`https://www.dmoe.cc/random.php?return=json`)
+  const requests = Array.from({ length: num }, () =>
+    fetch("https://www.dmoe.cc/random.php?return=json")
       .then((res) => res.json())
-      .then((data) => {
-        wallpapers.push({
-          url: data.imgurl,
-          meta: { source: "樱花壁纸", width: data.width, height: data.height },
-        });
-      });
-  }
-  return wallpapers;
+      .then((data) => ({
+        url: data.imgurl,
+        meta: { source: "樱花壁纸", width: data.width, height: data.height },
+      }))
+  );
+  return Promise.all(requests);
 }
 
 // 获取栗次元壁纸
@@ -97,60 +94,51 @@ async function getAlcyGenShinWallpaper(num = 1) {
 
 // 获取如诗壁纸
 async function getLikePoems2cyWallpaper(num = 1) {
-  const wallpapers = [];
-  for (let i = 0; i < num; i++) {
-    await fetch(`https://api.likepoems.com/img/pc/?json`)
+  const requests = Array.from({ length: num }, () =>
+    fetch("https://api.likepoems.com/img/pc/?json")
       .then((res) => res.json())
-      .then((data) => {
-        wallpapers.push({
-          url: data.url,
-          meta: { source: "如诗壁纸-二次元" },
-        });
-      });
-  }
-  return wallpapers;
+      .then((data) => ({
+        url: data.url,
+        meta: { source: "如诗壁纸-二次元" },
+      }))
+  );
+  return Promise.all(requests);
 }
 
 async function getLikePoemsNatureWallpaper(num = 1) {
-  const wallpapers = [];
-  for (let i = 0; i < num; i++) {
-    await fetch(`https://api.likepoems.com/img/nature/?json`)
+  const requests = Array.from({ length: num }, () =>
+    fetch(`https://api.likepoems.com/img/nature/?json`)
       .then((res) => res.json())
-      .then((data) => {
-        wallpapers.push({
-          url: data.url,
-          meta: { source: "如诗壁纸-自然风景" },
-        });
-      });
-  }
-  return wallpapers;
+      .then((data) => ({
+        url: data.url,
+        meta: { source: "如诗壁纸-自然风景" },
+      }))
+  );
+  return Promise.all(requests);
 }
 
 // 获取素颜壁纸
 async function getSuYanNatureWallpaper(num = 1) {
-  const wallpapers = [];
-  for (let i = 0; i < num; i++) {
-    await fetch(`https://api.suyanw.cn/api/scenery.php?return=json`)
+  const requests = Array.from({ length: num }, () =>
+    fetch("https://api.suyanw.cn/api/scenery.php?return=json")
       .then((res) => res.json())
-      .then((data) => {
-        wallpapers.push({
-          url: data.imgurl,
-          meta: {
-            source: "素颜壁纸-自然风景",
-            width: data.width,
-            height: data.height,
-          },
-        });
-      });
-  }
-  return wallpapers;
+      .then((data) => ({
+        url: data.imgurl,
+        meta: {
+          source: "素颜壁纸-自然风景",
+          width: data.width,
+          height: data.height,
+        },
+      }))
+  );
+  return Promise.all(requests);
 }
 
 async function getSuYanGenshinWallpaper(num = 1) {
   const wallpapers = [];
-  for (let i = 0; i < num; i++) {
+  for (let i = 1; i < num; i++) {
     wallpapers.push({
-      url: "https://api.suyanw.cn/api/ys.php", // 这个接口返回图片数据本身
+      url: `https://api.suyanw.cn/api/ys.php?${i}`, // 该API不支持数量参数，直接获取一张壁纸数据
       meta: { source: "素颜壁纸-原神" },
     });
   }
