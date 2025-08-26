@@ -1,5 +1,4 @@
 /* ======== 文件读取工具函数 ======== */
-import sharp from "sharp";
 
 // 判断请求域名是否在允许的域名列表中
 export function isDomainAllowed(context) {
@@ -213,53 +212,6 @@ function isCompressibleImage(contentType) {
   return ct.startsWith("image/") && ct !== "image/svg+xml" && ct !== "image/gif";
 }
 
-// 智能图片压缩
-async function compressImageSmart(input, width, height, devicePixelRatio = 2, quality = 85, format = "jpeg") {
-  let buffer;
-  // 统一处理输入
-  if (input instanceof Uint8Array || input instanceof ArrayBuffer) {
-    buffer = Buffer.from(input);
-  } else if (input instanceof ReadableStream) {
-    const reader = input.getReader();
-    const chunks = [];
-    let length = 0;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const buf = value instanceof Uint8Array ? value : new Uint8Array(value);
-      chunks.push(buf);
-      length += buf.length;
-    }
-    buffer = Buffer.concat(
-      chunks.map((c) => Buffer.from(c)),
-      length
-    );
-  } else if (input instanceof Readable) {
-    const chunks = [];
-    for await (const chunk of input) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-    }
-    buffer = Buffer.concat(chunks);
-  } else if (typeof input.arrayBuffer === "function") {
-    buffer = Buffer.from(await input.arrayBuffer());
-  } else {
-    return input;
-  }
-
-  const targetW = width ? Math.round(width * devicePixelRatio) : null;
-  const targetH = height ? Math.round(height * devicePixelRatio) : null;
-
-  let img = sharp(buffer);
-  if (targetW || targetH) {
-    img = img.resize(targetW, targetH, { fit: "inside" });
-  }
-  if (format) {
-    img = img.toFormat(format, { quality });
-  }
-
-  return await img.toBuffer();
-}
-
 // 根据请求参数决定是否压缩图片
 export async function tryCompressBodyIfNeeded(context, originalBody, headers) {
   const { request, url } = context;
@@ -278,20 +230,39 @@ export async function tryCompressBodyIfNeeded(context, originalBody, headers) {
   const q = params.get("q") ? parseInt(params.get("q")) : 85;
   let format = params.get("format") || "jpeg";
 
+  // 标准化 format
+  const formatAlias = { jpg: "jpeg", jfif: "jpeg" };
+  format = formatAlias[format.toLowerCase()] || format.toLowerCase();
+
   try {
-    const compressed = await compressImageSmart(originalBody, w, h, dpr, q, format);
-    if (!compressed || compressed.length === 0) return originalBody;
-    // 更新响应头
-    const formatAlias = {
-      jpg: "jpeg",
-      jfif: "jpeg",
-    };
-    format = formatAlias[format.toLowerCase()] || format.toLowerCase();
-    headers.set("Content-Type", format ? `image/${format}` : contentType.split(";")[0]);
-    headers.set("Content-Length", String(compressed.length));
-    return compressed;
+    const imageBuffer = originalBody instanceof ArrayBuffer ? originalBody : await originalBody.arrayBuffer();
+
+    const response = await fetch(`https://imagedelivery.net/_PLACEHOLDER_`, {
+      method: "POST",
+      body: imageBuffer,
+      headers: {
+        "Content-Type": contentType,
+        "CF-Image-Resize": JSON.stringify({
+          width: width ? Math.round(width * dpr) : undefined,
+          height: height ? Math.round(height * dpr) : undefined,
+          fit: "cover",
+          format,
+          quality,
+        }),
+      },
+    });
+
+    if (!response.ok) {
+      console.warn("Image compression request failed:", response.status, response.statusText);
+      return originalBody;
+    }
+
+    const compressedBody = await response.arrayBuffer();
+    headers.set("Content-Type", `image/${format}`);
+    headers.set("Content-Length", compressedBody.byteLength.toString());
+    return compressedBody;
   } catch (err) {
-    console.warn("Image compression failed:", err?.message || err);
+    cconsole.warn("Image compression failed:", err?.message || err);
     return originalBody;
   }
 }
