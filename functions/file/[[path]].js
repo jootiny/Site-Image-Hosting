@@ -93,7 +93,7 @@ async function handleTelegramFile(context, imgRecord, encodedFileName, fileType)
     const headers = new Headers(response.headers);
     setCommonHeaders(headers, encodedFileName, fileType, Referer, url);
 
-    return new Response(request.Body, {
+    return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers,
@@ -348,12 +348,8 @@ async function handleS3File(context, metadata, encodedFileName, fileType) {
     // 处理HEAD请求
     if (request.method === "HEAD") return handleHeadRequest(headers);
 
-    // 处理Range请求
-    if (rangeHeader) return new Response(response.Body, { status: 206, headers });
-
-    // 普通类型请求
-    // 图片后处理
-    return new Response(response.Body, { status: 200, headers });
+    // 返回响应，支持流式传输
+    return new Response(response.Body, { status: rangeHeader ? 206 : 200, headers });
   } catch (error) {
     return new Response(`Error: Failed to fetch from S3 - ${error.message}`, { status: 500 });
   }
