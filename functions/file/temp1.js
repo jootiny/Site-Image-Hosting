@@ -10,7 +10,7 @@ import {
   returnBlockImg,
   return404,
   isDomainAllowed,
-  tryCompressBodyIfNeeded,
+  compressImageSmart,
 } from "./fileTools";
 
 export async function onRequest(context) {
@@ -93,10 +93,7 @@ async function handleTelegramFile(context, imgRecord, encodedFileName, fileType)
     const headers = new Headers(response.headers);
     setCommonHeaders(headers, encodedFileName, fileType, Referer, url);
 
-    // 图片后处理
-    const compressed_body = await tryCompressBodyIfNeeded(context, response.body, headers);
-
-    return new Response(compressed_body, {
+    return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers,
@@ -306,9 +303,7 @@ async function handleR2File(context, fileId, encodedFileName, fileType) {
       headers.set("Content-Length", object.range.length.toString());
       return new Response(object.body, { status: 206, headers });
     } else {
-      // 图片后处理
-      const compressed_body = await tryCompressBodyIfNeeded(context, object.body, headers);
-      return new Response(compressed_body, { status: 200, headers });
+      return new Response(object.body, { status: 200, headers });
     }
   } catch (error) {
     return new Response(`Error: Failed to fetch from R2 - ${error.message}`, { status: 500 });
@@ -353,13 +348,8 @@ async function handleS3File(context, metadata, encodedFileName, fileType) {
     // 处理HEAD请求
     if (request.method === "HEAD") return handleHeadRequest(headers);
 
-    // 处理Range请求
-    if (rangeHeader) return new Response(response.Body, { status: 206, headers });
-
-    // 普通类型请求
-    // 图片后处理
-    const compressed_body = await tryCompressBodyIfNeeded(context, response.Body, headers);
-    return new Response(compressed_body, { status: 200, headers });
+    // 返回响应，支持流式传输
+    return new Response(response.Body, { status: rangeHeader ? 206 : 200, headers });
   } catch (error) {
     return new Response(`Error: Failed to fetch from S3 - ${error.message}`, { status: 500 });
   }
