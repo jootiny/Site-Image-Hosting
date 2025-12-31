@@ -457,7 +457,7 @@ async function uploadFileToTelegram(context, fullId, metadata, fileExt, fileName
 
     // 更新metadata，写入KV数据库
     try {
-      metadata.Channel = " ";
+      metadata.Channel = "TelegramNew";
       metadata.ChannelName = tgChannel.name;
 
       metadata.TgFileId = id;
