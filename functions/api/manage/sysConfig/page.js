@@ -25,7 +25,19 @@ export async function onRequest(context) {
   // POST保存设置
   if (request.method === "POST") {
     const body = await request.json();
-    const settings = body;
+    const settings = body; // setting 本身没有时间戳
+
+    // 公告时间戳处理
+    const find = (s, id) => s.config?.find((i) => i.id === id);
+    const oldStr = await kv.get("manage@sysConfig@page");
+    const oldSettings = oldStr ? JSON.parse(oldStr) : {};
+    const newItem = find(settings, "announcement");
+    const oldItem = find(oldSettings, "announcement");
+    if (newItem?.value !== oldItem?.value) {
+      const announcementTimeItem = find(settings, "announcementTime");
+      announcementTimeItem.value = Date.now();
+    }
+
     // 写入 KV
     await kv.put("manage@sysConfig@page", JSON.stringify(settings));
 
@@ -98,9 +110,9 @@ export async function getPageConfig(kv, env) {
     },
     {
       id: "announcementTime",
-      label: "公告更新时间",
-      readonly: true,
+      label: "公告时间戳",
       category: "客户端设置",
+      readonly: true,
     },
     {
       id: "defaultUploadChannel",
